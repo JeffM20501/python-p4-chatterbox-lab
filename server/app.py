@@ -14,13 +14,60 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-@app.route('/messages')
+@app.route('/messages', methods=['GET', 'POST'])
 def messages():
-    return ''
+    messages_dict=[message.to_dict() for message in Message.query.all()]
+    if messages_dict:
+        if request.method=='GET':
+            response=make_response(messages_dict,200)
+            return response
+        
+        elif request.method=='POST':
+            data=request.get_json()
+            new_message=Message(
+                body=data.get('body'),
+                username=data.get('username'),
+            )
+            db.session.add(new_message)
+            db.session.commit()
+            
+            message_dict=new_message.to_dict()
+            response=make_response(message_dict,201)
+            return response
+    
+    else: return '<h1>Not Found!</h2>'
 
-@app.route('/messages/<int:id>')
+@app.route('/messages/<int:id>', methods=['PATCH','GET','DELETE'])
 def messages_by_id(id):
-    return ''
+    message=Message.query.filter(Message.id==id).first()
+    
+    if message:
+        if request.method=='GET':
+            message_dict=message.to_dict()
+            response=make_response(message_dict, 200)
+            return response
+        
+        elif request.method=='PATCH':
+            data=request.get_json()
+            for attr in data:
+                setattr(message,attr,data.get(attr))
+            db.session.add(message)
+            db.session.commit()
+            
+            message_dict=message.to_dict()
+            response=make_response(message_dict,200)
+            return response
+        
+        elif request.method=='DELETE':
+            db.session.delete(message)
+            db.session.commit()
+            
+            response_body={
+                'delete_success':True,
+                'message':'Message delete successfully'
+            }
+            response=make_response(response_body, 200)
+            return response
 
 if __name__ == '__main__':
     app.run(port=5555)
