@@ -51,6 +51,7 @@ def messages_by_id(id):
             data=request.get_json()
             for attr in data:
                 setattr(message,attr,data.get(attr))
+                
             db.session.add(message)
             db.session.commit()
             
